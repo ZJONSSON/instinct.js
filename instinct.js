@@ -48,14 +48,13 @@ instinct = function(logic,facts) {
           done();
         }
       } else {
-        process[key] = function(d) {
-          facts[key] = d;
+        process[key] = function _process(err,d) {
+          facts[key] = (arguments.length == 2) ? d : err;
           delete process[key]
           done();
         }
-        instinct.exec(logic[key],function(d) {
-          process[key](d)
-        })
+        instinct.exec(logic[key],process[key])
+        
       }
     })
     done();
