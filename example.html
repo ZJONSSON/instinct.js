@@ -1,0 +1,33 @@
+<html>
+<body>
+<script src="instinct.js"></script>
+<script>
+
+i = instinct();
+
+// Define dummy logic.  Dependancies are evaluated based on the parameter arguments of each function.
+// No dependancies => parallel execution.  Dependancies are run sequentially.
+i.logic.test = function(number,cb) { return cb(number-2) }
+i.logic.test2 =function(test,cb) { return setTimeout(function() { cb(test+70) },1000)}
+i.logic.test3 = function(test,cb) { return setTimeout(function() { cb(test+90) },2000)}
+i.logic.test4 = function(test2,test3,cb) { return setTimeout(function() { cb(test3+test2+100)})}
+i.logic.goodtohave = function(test3,cb) { return setTimeout(function() { cb(test3*2)},5000)}
+
+// And add one fact into the mig
+i.facts.number = 23
+
+
+// Let's allow instinct.js to determine optimal evaluation of the following function
+i.exec(function(test4,test) { 
+  alert("RESULTS ARE "+test4+" and "+test)
+  i.exec(function(goodtohave) {}) // This prepares goodtohave in case we need it later on
+})
+
+// See console logs for a dynamic view of outstanding processes
+setInterval(function() { console.log("Processes running: "+JSON.stringify(Object.keys(i.process)))},200)
+
+</script>
+</body>
+</html>
+
+
