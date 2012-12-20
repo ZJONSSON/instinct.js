@@ -19,10 +19,14 @@ The logic object is used as read-only, allowing the same logic definitions reuse
 
 This schedules an execution of the supplied function.  The argument names of the function will be parsed and matched to facts and logic within the instance object by argument name.  Any arguments that point to neither a fact nor logic will result in an error.  The supplied function is essentially a callback function that is executed when the inputs are known.  
 
+`instinct.exec` can also be called with an argument name (i.e. logic function name) as first argument and a callback function as the second.  This is in fact the way recursive calls are made behind the scenes.
+
 ### `instinct.logic = {}`
 Key/value dictionary of logic functions. Each logic function must include the argument `cb` as a reference to the callback function used by instinct.  This callback function will have to be executed inside each logic function with the value of the results (`fact`) for the corresponding key.
 
 The callback can be executed either Node style with (error,value) or just the value as an argument.  Errors will however not (yet) be passed upstream currently, only the value.
+
+Any logic element that is not a function will be assumed to be a fact. This is only recommended use for Global Constants, as the logic elements can be asynchronously used by different instinct objects under assymetric information (facts).
 
 ### `instinct.as(name)`
 Helper that returns a callback function which, when executed, updates the corresponding `instance.fact` (by name).   This helper eliminates the need to write wrappers around independent functions that can execute immediately.  The execution of the `instinct.as()` itself should not be delayed inside higher callbacks, as it registers the name within the instance object, allowing other functions to queue up for the results.
@@ -43,12 +47,14 @@ $.ajax("./somefile.txt")
 ```
 
 ### `instinct.fact = {}`
-Key value dictionary of facts.  Facts can be user supplied, determined by logic functions or both.   Any fact that exists will prevent execution of logic by same name.
+Key value dictionary of facts.  Facts can be user supplied, determined by logic functions or both.   Any fact that exists will prevent execution of logic by same name.  
 
 ### `instinct.process = {}`
 Internal object that keeps track of logic functions that are currently running.  Any requests to logic that is executing will simply attach their callback to the process object to prevent multiple executions.
 
 ## Hints and tips
+
+* By defining logic object as the `Window` object, all global functions and variables are made available.
 
 * Complex tree of "knowledge spaces" can be created with multiple instinct object that refer to one another inside respective logic functions
 
