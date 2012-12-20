@@ -1,6 +1,10 @@
 (function() {
 var reArgs = /function.*?\((.*?)\).*/;
 
+function notFn(fn) { 
+  return (typeof fn !="function");
+}
+
 function matchArgs(fn) {
   var match = reArgs.exec(fn.prototype.constructor.toString()),
       args = {};
@@ -29,6 +33,11 @@ instinct = function(logic,facts) {
   }
 
   instinct.exec = function(fn,cb) {
+    if (notFn(fn)) {
+      fn = logic[fn];
+      if (notFn(fn)) return (cb && cb(fn));
+    }
+      
     var args = matchArgs(fn)
     var req = 0;
 
@@ -53,7 +62,7 @@ instinct = function(logic,facts) {
           delete process[key]
           done();
         }
-        instinct.exec(logic[key],process[key])
+        instinct.exec(key,process[key])
       }
     })
     done();
