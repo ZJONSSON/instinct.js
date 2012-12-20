@@ -1,5 +1,5 @@
 (function() {
-var reArgs = /function \((.*?)\).*/;
+var reArgs = /function.*?\((.*?)\).*/;
 
 matchArgs = function args(fn) {
   var match = reArgs.exec(fn.prototype.constructor.toString()),
