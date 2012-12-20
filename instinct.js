@@ -54,14 +54,25 @@ instinct = function(logic,facts) {
           done();
         }
         instinct.exec(logic[key],process[key])
-        
       }
     })
     done();
     return instinct;
   }
 
+  instinct.as = function(key) {
+    process[key] = noop;
+    return function(err,d) {
+      facts[key] = (arguments.length == 2) ? d : err;
+      console.log(facts[key])
+      process[key]();
+      delete process[key];
+    }
+  }
+
   return instinct
 }
+
+function noop() {};
 
 })();
