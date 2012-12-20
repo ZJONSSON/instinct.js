@@ -38,8 +38,8 @@ instinct = function(logic,facts) {
       if (notFn(fn)) return (cb && cb(fn));
     }
       
-    var args = matchArgs(fn)
-    var req = 0;
+    var args = matchArgs(fn),
+        req = 0;
 
     function done() {
       if(!req--) {
@@ -48,7 +48,7 @@ instinct = function(logic,facts) {
     };
     
     Object.keys(args).forEach(function(key) {
-      if (facts[key] || key=="cb") return;
+      if (facts[key] !== undefined || key=="cb") return;
       req+=1;
       var isRunning = process[key];
       if (isRunning) {
