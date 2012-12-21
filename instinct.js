@@ -43,7 +43,7 @@ instinct = function(logic,facts) {
 
     function done() {
       if(!req--) {
-        fn.apply(this,generateArgs(args,cb));
+        fn.apply(instinct,generateArgs(args,cb));
       }
     };
     
