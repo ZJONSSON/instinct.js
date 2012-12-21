@@ -1,87 +1,91 @@
 (function() {
-var reArgs = /function.*?\((.*?)\).*/;
+  if (typeof module === "undefined") self.instinct = instinct;
+  else module.exports = instinct;
 
-function notFn(fn) { 
-  return (typeof fn !="function");
-}
+  instinct.version = "0.0.1";
 
-function matchArgs(fn) {
-  var match = reArgs.exec(fn.prototype.constructor.toString()),
-      args = {};
+  var reArgs = /function.*?\((.*?)\).*/;
 
-  if (match[1].length >0) {
-    match[1].split(",").forEach(function(d,i) {
-      args[d] = i;
-    })
-  } 
-  return args;
-}
-
-instinct = function(logic,facts) {
-  logic = logic || {};
-  facts = facts || {};
-  
-  var process = {},
-      instinct = {logic:logic,facts:facts,process:process};
-
-  function generateArgs(args,cb) {
-    var d = []
-    for (key in args) {
-      d[args[key]] = (key=="cb") ? cb : facts[key];
-    }
-    return d;
+  function notFn(fn) { 
+    return (typeof fn !="function");
   }
 
-  instinct.exec = function(fn,cb) {
-    if (notFn(fn)) {
-      fn = logic[fn];
-      if (notFn(fn)) return (cb && cb(fn));
-    }
-      
-    var args = matchArgs(fn),
-        req = 0;
+  function matchArgs(fn) {
+    var match = reArgs.exec(fn.prototype.constructor.toString()),
+        args = {};
 
-    function done() {
-      if(!req--) {
-        fn.apply(instinct,generateArgs(args,cb));
-      }
-    };
+    if (match[1].length >0) {
+      match[1].split(",").forEach(function(d,i) {
+        args[d] = i;
+      })
+    } 
+    return args;
+  }
+
+  function instinct(logic,facts) {
+    logic = logic || {};
+    facts = facts || {};
     
-    Object.keys(args).forEach(function(key) {
-      if (facts[key] !== undefined || key=="cb") return;
-      req+=1;
-      var isRunning = process[key];
-      if (isRunning) {
-        process[key] = function(d) {
-          isRunning(d);
-          done();
-        }
-      } else {
-        process[key] = function _process(err,d) {
-          facts[key] = (arguments.length == 2) ? d : err;
-          delete process[key]
-          done();
-        }
-        instinct.exec(key,process[key])
+    var process = {},
+        instinct = {logic:logic,facts:facts,process:process};
+
+    function generateArgs(args,cb) {
+      var d = []
+      for (key in args) {
+        d[args[key]] = (key=="cb") ? cb : facts[key];
       }
-    })
-    done();
-    return instinct;
-  }
-
-  instinct.as = function(key) {
-    process[key] = noop;
-    return function(err,d) {
-      facts[key] = (arguments.length == 2) ? d : err;
-      console.log(facts[key])
-      process[key]();
-      delete process[key];
+      return d;
     }
+
+    instinct.exec = function(fn,cb) {
+      if (notFn(fn)) {
+        fn = logic[fn];
+        if (notFn(fn)) return (cb && cb(fn));
+      }
+        
+      var args = matchArgs(fn),
+          req = 0;
+
+      function done() {
+        if(!req--) {
+          fn.apply(instinct,generateArgs(args,cb));
+        }
+      };
+      
+      Object.keys(args).forEach(function(key) {
+        if (facts[key] !== undefined || key=="cb") return;
+        req+=1;
+        var isRunning = process[key];
+        if (isRunning) {
+          process[key] = function(d) {
+            isRunning(d);
+            done();
+          }
+        } else {
+          process[key] = function _process(err,d) {
+            facts[key] = (arguments.length == 2) ? d : err;
+            delete process[key]
+            done();
+          }
+          instinct.exec(key,process[key])
+        }
+      })
+      done();
+      return instinct;
+    }
+
+    instinct.as = function(key) {
+      process[key] = noop;
+      return function(err,d) {
+        facts[key] = (arguments.length == 2) ? d : err;
+        console.log(facts[key])
+        process[key]();
+        delete process[key];
+      }
+    }
+
+    return instinct
   }
 
-  return instinct
-}
-
-function noop() {};
-
+  function noop() {};
 })();
