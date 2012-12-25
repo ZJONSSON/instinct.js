@@ -2,13 +2,9 @@
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
 
-  instinct.version = "0.0.1";
+  instinct.version = "0.0.2";
 
   var reArgs = /function.*?\((.*?)\).*/;
-
-  function notFn(fn) { 
-    return (typeof fn !="function");
-  }
 
   function matchArgs(fn) {
     var match = reArgs.exec(fn.prototype.constructor.toString()),
@@ -18,7 +14,7 @@
       match[1].split(",").forEach(function(d,i) {
         args[d] = i;
       })
-    } 
+    };
     return args;
   }
 
@@ -31,46 +27,47 @@
 
     function generateArgs(args,cb) {
       var d = []
-      for (key in args) {
+      for (var key in args) {
         d[args[key]] = (key=="cb") ? cb : facts[key];
       }
       return d;
     }
 
-    instinct.exec = function(fn,cb) {
-      if (notFn(fn)) {
-        fn = logic[fn];
-        if (notFn(fn)) return (cb && cb(fn));
-      }
-        
+    instinct.exec = function(ref,cb) {
+      var fn,processCb;
+      if (typeof ref !== "function") {
+        if (facts[ref]) return cb(facts[ref]);
+        if (processCb = process[ref]) return process[ref] = function() {
+          processCb.apply(instinct,arguments);
+          cb && cb.apply(instinct,arguments)
+        };
+        fn = logic[ref];
+        if (typeof fn !== 'function') return cb(fn)
+      } else fn = ref;
+
       var args = matchArgs(fn),
           req = 0;
 
-      function done() {
-        if(!req--) {
-          fn.apply(instinct,generateArgs(args,cb));
-        }
-      };
-      
+      process[ref] = function(err,d) {
+        delete process[ref];
+        facts[ref] = (arguments.length == 2) ? d : err;
+        cb.apply(instinct,arguments)
+      }
+
+      function queue() {
+        if(!req--) fn.apply(instinct,generateArgs(args,function() {
+            process[ref].apply(instinct,arguments);
+        }))
+      }
+
       Object.keys(args).forEach(function(key) {
         if (facts[key] !== undefined || key=="cb") return;
-        req+=1;
-        var isRunning = process[key];
-        if (isRunning) {
-          process[key] = function(d) {
-            isRunning(d);
-            done();
-          }
-        } else {
-          process[key] = function _process(err,d) {
-            facts[key] = (arguments.length == 2) ? d : err;
-            delete process[key]
-            done();
-          }
-          instinct.exec(key,process[key])
-        }
+        req++;
+        instinct.exec(key,queue)
       })
-      done();
+
+      queue();
+
       return instinct;
     }
 
@@ -87,5 +84,5 @@
     return instinct
   }
 
-  function noop() {};
+  function noop() {}
 })();
