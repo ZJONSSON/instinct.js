@@ -11,7 +11,7 @@
         args = {};
 
     if (match[1].length >0) {
-      match[1].split(",").forEach(function(d,i) {
+      match[1].replace(/\s/g,'').split(",").forEach(function(d,i) {
         args[d] = i;
       })
     };
