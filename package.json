@@ -1,6 +1,6 @@
 {
   "name": "instinct",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Lightweight dependency solver for asynchronous JavaScript.",
   "keywords": [
     "asynchronous",
