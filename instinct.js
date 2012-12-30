@@ -50,11 +50,15 @@
 
       process[ref] = function(err,d) {
         delete process[ref];
-        facts[ref] = (arguments.length == 2) ? d : err;
-        cb.apply(instinct,arguments)
+        if (arguments.length == 1 || !err) facts[ref] = (arguments.length == 2) ? d : err;
+        (cb && cb.apply(instinct,arguments))
       }
 
-      function queue() {
+      function queue(err) {
+        if (arguments.length >1 && err) {
+          req = -1;
+          process[ref].apply(instinct,arguments)
+        }
         if(!req--) fn.apply(instinct,generateArgs(args,function() {
             process[ref].apply(instinct,arguments);
         }))
