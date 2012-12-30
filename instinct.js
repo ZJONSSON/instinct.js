@@ -50,7 +50,8 @@
 
       process[ref] = function(err,d) {
         delete process[ref];
-        if (arguments.length == 1 || !err) facts[ref] = (arguments.length == 2) ? d : err;
+        if (arguments.length == 1 || !err) facts[ref] = (arguments.length == 2) ? d : err
+        else if (!err || !err.ref) arguments = [{ref:ref,err:err},null];
         (cb && cb.apply(instinct,arguments))
       }
 
