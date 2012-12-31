@@ -42,7 +42,7 @@
           cb && cb.apply(instinct,arguments)
         };
         fn = logic[ref];
-        if (typeof fn !== 'function') return cb(fn)
+        if (typeof fn !== 'function') return cb(facts[ref] = fn);
       } else fn = ref;
 
       var args = matchArgs(fn),
