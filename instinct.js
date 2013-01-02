@@ -13,8 +13,8 @@
     if (match[1].length >0) {
       match[1].replace(/\s/g,'').split(",").forEach(function(d,i) {
         args[d] = i;
-      })
-    };
+      });
+    }
     return args;
   }
 
@@ -26,7 +26,7 @@
         instinct = {logic:logic,facts:facts,process:process};
 
     function generateArgs(args,cb) {
-      var d = []
+      var d = [];
       for (var key in args) {
         d[args[key]] = (key=="cb") ? cb : facts[key];
       }
@@ -39,7 +39,7 @@
         if (facts[ref]) return cb(facts[ref]);
         if (processCb = process[ref]) return process[ref] = function() {
           processCb.apply(instinct,arguments);
-          cb && cb.apply(instinct,arguments)
+          if (cb) cb.apply(instinct,arguments);
         };
         fn = logic[ref];
         if (typeof fn !== 'function') return cb(facts[ref] = fn);
@@ -50,9 +50,12 @@
 
       process[ref] = function(err,d) {
         delete process[ref];
-        if (arguments.length == 1 || !err) facts[ref] = (arguments.length == 2) ? d : err
-        else if (!err || !err.ref) arguments = [{ref:ref,err:err},null];
-        (cb && cb.apply(instinct,arguments))
+        if (arguments.length == 1) {
+          d = err;
+          err = undefined;
+        }
+        if (!err) facts[ref] = d;
+        if (cb) cb.apply(instinct,(err && !err.ref) ? [{ref:ref,err:err},null] : arguments)
       }
 
       function queue(err) {
