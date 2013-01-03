@@ -55,15 +55,22 @@
         if (cb) cb.call(instinct,err,d);
       }
 
-      function queue(err,d) {
+      function queue(err) {
         if (arguments.length >1 && err) {
           req = -1;
           process[ref].apply(instinct,arguments)
         }
-        
-        if(!req--) fn.apply(instinct,generateArgs(args,function() {
+        var that = {
+          facts:instinct.facts,
+          callback:function() {
+            this.callback=noop;
             process[ref].apply(instinct,arguments);
-        }))
+          },
+          fact : function(d) { this.callback(null,d)},
+          error : function(d) { this.callback(d,null)}
+        };
+
+        if(!req--) fn.apply(that,generateArgs(args,that.callback))
       }
 
       Object.keys(args).forEach(function(key) {
