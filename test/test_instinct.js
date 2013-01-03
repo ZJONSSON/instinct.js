@@ -92,10 +92,11 @@ vows.describe("instinct").addBatch({
   "non-existing argument" : {
     topic : function() {
       var cb = this.callback;
-      I.exec("NOT EXISTS",cb)
+      I.exec("SOMETHING",cb)
     },
-    "returns undefined" : function(d) {
-      assert.strictEqual(d,undefined)
+    "returns undefined" : function(err,d) {
+      assert.deepEqual(err, { ref: 'SOMETHING', err: 'Not defined' })
+      assert.isUndefined(d)
     }
   },
   "this.fact" : {
@@ -122,8 +123,8 @@ vows.describe("instinct").addBatch({
       assert.deepEqual(err,{ ref: 'F', err: 'Could not process' })
     },
     "facts of the error ref and all dependents are undefined" : function(err,d) {
-      assert.equal(I.facts.F,undefined)
-      assert.equal(I.facts.G,undefined)
+      assert.isUndefined(I.facts.F)
+      assert.isUndefined(I.facts.G)
     }
   },
   "argument named 'callback' in logic function" : {

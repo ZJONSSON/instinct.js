@@ -36,7 +36,7 @@
           if (cb) cb.apply(instinct,arguments);
         };
         fn = logic[ref];
-        if (typeof fn !== 'function') return cb(null,facts[ref] = fn);
+        if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,facts[ref]=fn) : cb({ref:ref,err:'Not defined'});
       } else fn = ref;
 
       var args = matchArgs(fn),
