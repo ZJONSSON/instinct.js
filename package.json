@@ -1,6 +1,6 @@
 {
   "name": "instinct",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Lightweight dependency solver for asynchronous JavaScript.",
   "keywords": [
     "asynchronous",
@@ -13,10 +13,11 @@
   },
   "main": "instinct.js",
   "devDependencies": {
-    "uglify-js2": "~2.1.11"
+    "uglify-js2": "~2.1.11",
+     "vows": "0.6.x"
   },
+  "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "license": "MIT"
+    "test": "./node_modules/vows/bin/vows"
+  }
 }
