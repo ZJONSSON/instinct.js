@@ -28,13 +28,16 @@
    
 
     instinct.exec = function(ref,cb) {
-      var fn,processCb;
+      var fn,prevCb=process[ref];
       if (typeof ref !== "function") {
         if (facts[ref]) return cb(null,facts[ref]);
-        if (processCb = process[ref]) return process[ref] = function() {
-          processCb.apply(instinct,arguments);
-          if (cb) cb.apply(instinct,arguments);
-        };
+        if (prevCb) {
+          process[ref] = function() {
+            prevCb.apply(instinct,arguments);
+            if (cb) cb.apply(instinct,arguments);
+          };
+          return instinct;
+        }
         fn = logic[ref];
         if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,facts[ref]=fn) : cb({ref:ref,err:'Not defined'});
       } else fn = ref;
@@ -47,22 +50,22 @@
         if (!err) facts[ref] = d;
         if (err && !err.ref) err = {ref:ref,err:err};
         if (cb) cb.call(instinct,err,d);
-      }
+      };
 
       var context = {
         callback : function() {
           this.callback = noop;
-          process[ref].apply(instinct,arguments)
+          process[ref].apply(instinct,arguments);
         },
-        fact : function(d) { this.callback(null,d)},
-        error : function(d) { this.callback(d)},
+        fact : function(d) { this.callback(null,d); },
+        error : function(d) { this.callback(d); },
         facts : instinct.facts
-      }
+      };
 
       function queue(err) {
         if (arguments.length >1 && err) {
           req = -1;
-          process[ref].apply(instinct,arguments)
+          process[ref].apply(instinct,arguments);
         }
 
         if(!req--) {
@@ -70,32 +73,32 @@
           for (var key in args) {
             resolvedArgs[args[key]] = (context[key]) ? context[key] : facts[key];
           }
-          fn.apply(context,resolvedArgs)
+          fn.apply(context,resolvedArgs);
         }
       }
    
       Object.keys(args).forEach(function(key) {
         if (facts[key] !== undefined || key in context) return;
         req++;
-        instinct.exec(key,queue)
-      })
+        instinct.exec(key,queue);
+      });
 
       queue();
 
       return instinct;
-    }
+    };
 
     instinct.as = function(key) {
       process[key] = noop;
       return function(err,d) {
         facts[key] = (arguments.length == 2) ? d : err;
-        console.log(facts[key])
+        console.log(facts[key]);
         process[key]();
         delete process[key];
-      }
-    }
+      };
+    };
 
-    return instinct
+    return instinct;
   }
 
   function noop() {}
