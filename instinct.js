@@ -25,10 +25,10 @@
     var process = {},
         instinct = {logic:logic,facts:facts,process:process};
 
-    function generateArgs(args,cb) {
+    function generateArgs(args,callback) {
       var d = [];
       for (var key in args) {
-        d[args[key]] = (key=="cb") ? cb : facts[key];
+        d[args[key]] = (key=="callback") ? callback : facts[key];
       }
       return d;
     }
