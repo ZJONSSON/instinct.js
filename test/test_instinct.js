@@ -89,7 +89,7 @@ vows.describe("instinct").addBatch({
       
     }
   },
-  "undefined parameter" : {
+  "non-existing argument" : {
     topic : function() {
       var cb = this.callback;
       I.exec("NOT EXISTS",cb)
@@ -110,7 +110,7 @@ vows.describe("instinct").addBatch({
     topic : function() {
       I.exec("E",this.callback)
     },
-    "only use the first one" : function(d) {
+    "only first callback is used, rest goes to noop()" : function(d) {
       assert.equal(d,14)
     }
   },
@@ -118,15 +118,15 @@ vows.describe("instinct").addBatch({
     topic : function() {
       I.exec("G",this.callback)
     },
-    "throws an error" : function(err,d) {
+    "show up as first argument (err)" : function(err,d) {
       assert.deepEqual(err,{ ref: 'F', err: 'Could not process' })
     },
-    "Facts from error and up are undefined" : function(err,d) {
+    "facts of the error ref and all dependents are undefined" : function(err,d) {
       assert.equal(I.facts.F,undefined)
       assert.equal(I.facts.G,undefined)
     }
   },
-  "callback argument in logic function" : {
+  "argument named 'callback' in logic function" : {
     topic: function() {
       I.exec("H",this.callback)
     },
@@ -138,17 +138,25 @@ vows.describe("instinct").addBatch({
     topic : function() {
       I.exec("MTOP",this.callback)
     },
-    "returns the top value" : function(d) {
+    "is resolved to the top value" : function(d) {
       assert.equal(d,100)
     },
-    "and leaves the trail in the fact table" : function(d) {
-      assert.isNumber(I.facts.M1)
-      assert.isNumber(I.facts.M2)
-      assert.isNumber(I.facts.M3)
-      assert.isNumber(I.facts.M4)
+    "" : {
+      topic : function() {
+        var self=this;
+        I.exec(function(facts) {
+          self.callback(null,facts)
+        })
+      },
+      "and leaves the trail in the fact table" : function(d) {
+        assert.isNumber(d.M1)
+        assert.isNumber(d.M2)
+        assert.isNumber(d.M3)
+        assert.isNumber(d.M4)
+      }
     }
   },
-  "reserved function arguments" : {
+  "reserved function arguments defined in the context object" : {
     topic : function() {
       var that = this;
       I.exec(function(facts,callback,error,fact,A) {
