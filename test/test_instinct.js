@@ -147,7 +147,24 @@ vows.describe("instinct").addBatch({
       assert.isNumber(I.facts.M3)
       assert.isNumber(I.facts.M4)
     }
+  },
+  "reserved function arguments" : {
+    topic : function() {
+      var that = this;
+      I.exec(function(facts,callback,error,fact,A) {
+        that.callback(null,{fact:fact,facts:facts,callback:callback,error:error})
+      })
+    },
+    "facts is an object" : function(d) {
+      assert.isObject(d.facts);
+    },
+    "callback, fact and error are functions" : function(d) {
+      assert.isFunction(d.fact)
+      assert.isFunction(d.callback)
+      assert.isFunction(d.error)
+    }
   }
+
   
 })
 
