@@ -25,14 +25,7 @@
     var process = {},
         instinct = {logic:logic,facts:facts,process:process};
 
-    function generateArgs(args) {
-      var that = this;
-      var d = [];
-      for (var key in args) {
-        d[args[key]] = (that[key]) ? that[key] : facts[key];
-      }
-      return d;
-    }
+   
 
     instinct.exec = function(ref,cb) {
       var fn,processCb;
@@ -61,25 +54,31 @@
           req = -1;
           process[ref].apply(instinct,arguments)
         }
-        
 
-        if(!req--) {
-          var that = {
-            facts:instinct.facts,
+        if(!req--) done();
+      }
+
+      function done() {
+        var context = {
             callback:function() {
               this.callback=noop;
               process[ref].apply(instinct,arguments);
             },
             fact : function(d) { this.callback(null,d)},
-            error : function(d) { this.callback(d,null)}
-          };
-          var resolvedArgs = generateArgs.call(that,args)
-          fn.apply(that,resolvedArgs)
-        }
-      }
+            error : function(d) { this.callback(d,null)},
+            facts : instinct.facts
+          },
+          resolvedArgs = [];
 
+        for (var key in args) {
+          resolvedArgs[args[key]] = (context[key]) ? context[key] : facts[key];
+        }
+
+        fn.apply(context,resolvedArgs)
+      }
+    
       Object.keys(args).forEach(function(key) {
-        if (facts[key] !== undefined || key in ['facts','callback','fact','error']) return;
+        if (facts[key] !== undefined || key in ['callback','fact','error','facts']) return;
         req++;
         instinct.exec(key,queue)
       })
