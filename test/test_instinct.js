@@ -52,7 +52,7 @@ vows.describe("instinct").addBatch({
       },
       "The time to fetch again is zero" : function(d) {
         var wait = (new Date()) -I.time
-        assert.equal(wait<5,true,"wait was "+wait)
+        assert.equal(wait<50,true,"wait was "+wait)
       }
     }
   },
