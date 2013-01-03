@@ -3,9 +3,10 @@ assert = require("assert")
 vows=require("vows")
 
 var logic = {
-  A:function(cb) { setTimeout(function() { cb(4) },200)},
-  B: function(A,cb) { cb(A+5)},
-  C: 10
+  A:function(cb) { setTimeout(function() { cb(null,4) },200)},
+  B: function(A,cb) { cb(null,A+5)},
+  C: 10,
+  D: function(B) { return [null,B+9]}
 }
 
 var I = instinct(logic);
@@ -43,7 +44,7 @@ vows.describe("instinct").addBatch({
   'instinct by name' : {
     topic : function() {
       var cb = this.callback;
-      I.exec("B",function(d) { cb(null,d)})
+      I.exec("B",cb)
     },
     'returns correct variable' : function(d) {
       assert.equal(d,9)
@@ -52,9 +53,7 @@ vows.describe("instinct").addBatch({
   "default value in logic" : {
     topic : function() {
       var cb = this.callback;
-      I.exec("C",function(d) {
-        cb(null,d)
-      })
+      I.exec("C",cb)
     },
     "default value is returned" : function(d) {
       assert.equal(d,10)
@@ -66,9 +65,7 @@ vows.describe("instinct").addBatch({
   "undefined parameter" : {
     topic : function() {
       var cb = this.callback;
-      I.exec("E",function(d) {
-        cb(null,d)
-      })
+      I.exec("E",cb)
     },
     "returns undefined" : function(d) {
       assert.strictEqual(d,undefined)

@@ -36,13 +36,13 @@
     instinct.exec = function(ref,cb) {
       var fn,processCb;
       if (typeof ref !== "function") {
-        if (facts[ref]) return cb(facts[ref]);
+        if (facts[ref]) return cb(null,facts[ref]);
         if (processCb = process[ref]) return process[ref] = function() {
           processCb.apply(instinct,arguments);
           if (cb) cb.apply(instinct,arguments);
         };
         fn = logic[ref];
-        if (typeof fn !== 'function') return cb(facts[ref] = fn);
+        if (typeof fn !== 'function') return cb(null,facts[ref] = fn);
       } else fn = ref;
 
       var args = matchArgs(fn),
@@ -50,19 +50,17 @@
 
       process[ref] = function(err,d) {
         delete process[ref];
-        if (arguments.length == 1) {
-          d = err;
-          err = undefined;
-        }
         if (!err) facts[ref] = d;
-        if (cb) cb.apply(instinct,(err && !err.ref) ? [{ref:ref,err:err},null] : arguments)
+        if (err && !err.ref) err = {ref:ref,err:err};
+        if (cb) cb.call(instinct,err,d);
       }
 
-      function queue(err) {
+      function queue(err,d) {
         if (arguments.length >1 && err) {
           req = -1;
           process[ref].apply(instinct,arguments)
         }
+        
         if(!req--) fn.apply(instinct,generateArgs(args,function() {
             process[ref].apply(instinct,arguments);
         }))
