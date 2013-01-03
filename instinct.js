@@ -49,36 +49,33 @@
         if (cb) cb.call(instinct,err,d);
       }
 
+      var context = {
+        callback : function() {
+          this.callback = noop;
+          process[ref].apply(instinct,arguments)
+        },
+        fact : function(d) { this.callback(null,d)},
+        error : function(d) { this.callback(d)},
+        facts : instinct.facts
+      }
+
       function queue(err) {
         if (arguments.length >1 && err) {
           req = -1;
           process[ref].apply(instinct,arguments)
         }
 
-        if(!req--) done();
-      }
-
-      function done() {
-        var context = {
-            callback:function() {
-              this.callback=noop;
-              process[ref].apply(instinct,arguments);
-            },
-            fact : function(d) { this.callback(null,d)},
-            error : function(d) { this.callback(d,null)},
-            facts : instinct.facts
-          },
-          resolvedArgs = [];
-
-        for (var key in args) {
-          resolvedArgs[args[key]] = (context[key]) ? context[key] : facts[key];
+        if(!req--) {
+          var resolvedArgs = [];
+          for (var key in args) {
+            resolvedArgs[args[key]] = (context[key]) ? context[key] : facts[key];
+          }
+          fn.apply(context,resolvedArgs)
         }
-
-        fn.apply(context,resolvedArgs)
       }
-    
+   
       Object.keys(args).forEach(function(key) {
-        if (facts[key] !== undefined || key in ['callback','fact','error','facts']) return;
+        if (facts[key] !== undefined || key in context) return;
         req++;
         instinct.exec(key,queue)
       })
