@@ -2,7 +2,7 @@
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
 
-  instinct.version = "0.0.3";
+  instinct.version = "0.0.6";
 
   var reArgs = /function.*?\((.*?)\).*/;
 
@@ -19,87 +19,89 @@
   }
 
   function instinct(logic,facts) {
-    logic = logic || {};
-    facts = facts || {};
-    
-    var process = {},
-        instinct = {logic:logic,facts:facts,process:process};
-
-   
-
-    instinct.exec = function(ref,cb) {
-      var fn,prevCb=process[ref];
-      if (typeof ref !== "function") {
-        if (facts[ref]) return cb(null,facts[ref]);
-        if (prevCb) {
-          process[ref] = function() {
-            prevCb.apply(instinct,arguments);
-            if (cb) cb.apply(instinct,arguments);
-          };
-          return instinct;
-        }
-        fn = logic[ref];
-        if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,facts[ref]=fn) : cb({ref:ref,err:'Not defined'});
-      } else fn = ref;
-
-      var args = matchArgs(fn),
-          req = 0;
-
-      process[ref] = function(err,d) {
-        delete process[ref];
-        if (!err) facts[ref] = d;
-        if (err && !err.ref) err = {ref:ref,err:err};
-        if (cb) cb.call(instinct,err,d);
-      };
-
-      var context = {
-        callback : function() {
-          this.callback = noop;
-          process[ref].apply(instinct,arguments);
-        },
-        fact : function(d) { this.callback(null,d); },
-        error : function(d) { this.callback(d); },
-        facts : instinct.facts
-      };
-
-      function queue(err) {
-        if (arguments.length >1 && err) {
-          req = -1;
-          process[ref].apply(instinct,arguments);
-        }
-
-        if(!req--) {
-          var resolvedArgs = [];
-          for (var key in args) {
-            resolvedArgs[args[key]] = (context[key]) ? context[key] : facts[key];
-          }
-          fn.apply(context,resolvedArgs);
-        }
-      }
-   
-      Object.keys(args).forEach(function(key) {
-        if (facts[key] !== undefined || key in context) return;
-        req++;
-        instinct.exec(key,queue);
-      });
-
-      queue();
-
-      return instinct;
-    };
-
-    instinct.as = function(key) {
-      process[key] = noop;
-      return function(err,d) {
-        facts[key] = (arguments.length == 2) ? d : err;
-        console.log(facts[key]);
-        process[key]();
-        delete process[key];
-      };
-    };
-
-    return instinct;
+    return new Instinct(logic,facts);
   }
+
+  function Instinct(logic,facts) {
+    this.logic = logic || {};
+    this.facts = facts || {};
+    this.process = {};
+  }
+
+  Instinct.prototype.exec = function(ref,cb) {
+    var self = this,
+        fn;
+
+    if (typeof ref !== "function") {
+      if (self.facts[ref]) return cb(null,self.facts[ref]);
+      var previous=this.process[ref];
+      if (previous) {
+        self.process[ref] = function() {
+          previous.apply(self,arguments);
+          if (cb) cb.apply(self,arguments);
+        };
+        return self;
+      }
+      fn = self.logic[ref];
+      if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,self.facts[ref]=fn) : cb({ref:ref,err:'Not defined'});
+    } else fn = ref;
+
+    var args = matchArgs(fn),
+        req = 0;
+
+    self.process[ref] = function(err,d) {
+      delete self.process[ref];
+      if (!err) self.facts[ref] = d;
+      if (err && !err.ref) err = {ref:ref,err:err};
+      if (cb) cb.call(self,err,d);
+    };
+
+    var context = {
+      callback : function() {
+        this.callback = noop;
+        self.process[ref].apply(self,arguments);
+      },
+      success : function(d) { this.callback(null,d); },
+      error : function(d) { this.callback(d); },
+      facts : self.facts
+    };
+    context.resolve = context.success;
+    context.reject = context.error;
+
+    function queue(err) {
+      if (err) {
+        req = -1;
+        self.process[ref].apply(self,arguments);
+      }
+      if(!req--) {
+        var resolvedArgs = [];
+        for (var key in args) {
+          resolvedArgs[args[key]] = (context[key]) ? context[key] : self.facts[key];
+        }
+        fn.apply(context,resolvedArgs);
+      }
+    }
+ 
+    Object.keys(args).forEach(function(key) {
+      if (self.facts[key] !== undefined || key in context) return;
+      req++;
+      self.exec(key,queue);
+    });
+
+    queue();
+
+    return self
+  };
+
+  Instinct.prototype.as = function(key) {
+    this.process[key] = noop;
+    return function(err,d) {
+      if (!err) self.facts[ref] = d;
+      if (err && !err.ref) err = {ref:ref,err:err};
+      process[key](err,d);
+      delete process[key];
+    };
+  };
 
   function noop() {}
 })();
