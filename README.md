@@ -1,32 +1,66 @@
 # instinct.js
 
-**Instinct.js** is a lightweight asynchronous library with a twist.  Inspired by [queue.js](https://github.com/mbostock/queue) and  [require.js](http://requirejs.org/), instinct.js resolves dependencies, as needed, between asynchronous functions, memoizing the output in a "fact table" along with any static inputs supplied.
+**Instinct.js** is a lightweight asynchronous library with a twist.  Inspired by [queue.js](https://github.com/mbostock/queue),   [require.js](http://requirejs.org/) and [async.js](https://github.com/caolan/async), this library resolves dependencies, as needed, between asynchronous functions, memoizing the output in a "fact table" along with any static inputs supplied.  
 
-Each function passed will only execute when it's input arguments values are known (as a `fact`).  Each unknown input value will start off a `logic` function (by same name) that in turn will not return a value until it's own input arguments have been sorted out. This method will greedily queue/execute all the required steps in a mix of parallel and sequential blocks. 
+The magic of instinct.js lies in signatures of logic functions (or functions passed to instinct.exec).  Unlike regular functions, each argument name of a logic function must correspond to the name of a `fact` or `logic` component. This structure simultaneously defines the required dependencies for each function, as well as assigning the resolved dependencies as local variables to the function.   If a `fact` with the same name as a function argument already exists (either previously resolved, or supplied directly), it is simply passed on as an argument value to the function.  If a fact is unresolved (i.e. undefined), a logic function with same name is executed to resolve the fact value, before passing it on to the original function for execution.   If an argument name can neither be matched with a fact nor a logic function/value an error is raised.
 
-Each logic function will execute only once (if at all) in an instinct object. Multiple requests for the same logic will simply attach to the original request and once the output is known, any further requests will simply return the resolved `fact`, not the `logic` function.
+Each logic function will only execute when it's input arguments values are known (as a `fact`).  Each unknown input value will start off a `logic` function (by same name) that in turn will not return a value until it's own input arguments have been sorted out. This method will greedily queue/execute all the required steps in a mix of parallel and sequential blocks. 
 
-Function signatures are used shortcuts to both declare the variables required and passing them to the relevant `logic` function by name, if needed. Any function argument needs to have a corresponding element within the `instinct` object (by name), either a `fact` (known fixed value) or `logic` (function that can solve for the fact).
+Each logic function will execute only once (if at all) in an instinct object. Multiple requests for the same logic will simply attach to the original request callback and once the output is known, any further requests will simply return the resolved `fact` (or an error, respectively)
 
 ## API Reference
 
 ### `instinct([logic],[facts])`
-Creates a new instinct object based on a particular logic (set of functions by key) and facts (key: value).  Logic and fact objects can be defined/changed later on as they are exposed as properties of the instinct object.
+Creates a new Instinct object based on a particular logic (set of functions and values by reference) and facts (ref: value).  Logic and fact objects can be defined/modified later as they are public variables of the instinct object.
 
-The logic object is used as read-only, allowing the same logic definitions reused for multiple instinct objects (each with a separate fact space),
+The logic object is used as read-only (i.e. any results will only alter fact object, not the logic object), allowing the same logic definitions to be reused for multiple instinct objects (each with a separate fact space).  Instinct object can furthermore be chained by requiring any logic function of one Instinct object to use .exec() function of another.
 
 ### `instinct.exec(function(arg1,arg2...) { .... } )`
-
 This schedules an execution of the supplied function.  The argument names of the function will be parsed and matched to facts and logic within the instance object by argument name.  Any arguments that point to neither a fact nor logic will result in an error.  The supplied function is essentially a callback function that is executed when the inputs are known.  
 
-`instinct.exec` can also be called with an argument name (i.e. logic function name) as first argument and a callback function as the second.  This is in fact the way recursive calls are made behind the scenes.
+### `instinct.exec("name",callback)`
+The exec function can also be called with a string name as first parameter and a callback function as the second parameter.  This is essentially the same as calling instinct exec with a function with only one variable (i.e. name) and is ideal if you need to only work with one fact object.
+
+All callbacks should return two arguments `this.callback(err,value)` following typical node.js conventions.
 
 ### `instinct.logic = {}`
-Key/value dictionary of logic functions. Each logic function must include the argument `cb` as a reference to the callback function used by instinct.  This callback function will have to be executed inside each logic function with the value of the results (`fact`) for the corresponding key.
+Key/value dictionary of logic functions and/or values.   Function in the logic object must only contain arguments names that correspond to either facts or as other logic functions/values.    Each logic function must execute a callback with the resolved value or an error.  The typical way to execute the callback is to call `this.callback(err,value)` ensuring that the `this` object is stored as a local variable if the results are returned from a deeper scope.
 
-The callback can be executed either Node style with (error,value) or just the value as an argument.  Errors will however not (yet) be passed upstream currently, only the value.
+##### `this` context for logic functions
 
-Any logic element that is not a function will be assumed to be a fact. This is only recommended use for Global Constants, as the logic elements can be asynchronously used by different instinct objects under assymetric information (facts).
+There are however quite a few different ways to use callbacks from a logic function.  The context of `this` object is not the instinct object itself, but an artificial context, specific to the function itself, containing the following references:
+
+`this.facts` is a reference to the current facts object of the instinct instance (should not be used really, except to overwrite other facts)
+
+`this.callback` is the standard callback that requires `(err,value)` as parameters
+
+`this.success` is syntax sugar for `this.callback(null,value)`
+
+`this.error` is syntax sugar for `this.callback(error,null)`
+
+Additionally we have `this.resolve` and `this.reject` for those who like jquery promises way of resolving outstanding requests.
+
+
+##### Bonus level - reserved argument names
+Most asynchronous functions lose the context of the original `this` object requiring the programmer to store `this` as a local `that` or `self` at the top of the function.  In an attempt to eliminate that, all properties of `this` object are injected as function 
+arguments if their names are referenced in the function signature.
+
+Example:
+
+```js
+function(name,db,resolve) {
+  async.function(db,function(d) {
+    another_async(name,function(e,f,g,h) {
+       resolve(g)
+    })
+  })
+}
+```
+
+will retain the resolve callback as scoped all the way down the chain.
+
+##### Non-functions = default values
+Any logic element that is not a function will be assumed to be a default value for the same fact. This is only recommended for Global Constants, as the logic elements can be asynchronously used by different instinct objects under asymmetric information (facts).
 
 ### `instinct.as(name)`
 Helper that returns a callback function which, when executed, updates the corresponding `instance.fact` (by name).   This helper eliminates the need to write wrappers around independent functions that can execute immediately.  The execution of the `instinct.as()` itself should not be delayed inside higher callbacks, as it registers the name within the instance object, allowing other functions to queue up for the results.
@@ -60,8 +94,8 @@ Internal object that keeps track of logic functions that are currently running. 
 
 * Whenever there is high likelihood of particular information required shortly at some point, the easiest way is to execute an empty user function, with expected requirements as arguments and no callback.   The logic will appear to have an instinct.js for what might happen next.
 
-* If you want `A` executed before `B`, regardless of the results, simply include `A` as one of the function arguments to `B`, i.e. ```logic.B = function(A,Z,cb) { cb(..do something with Z...)}```
+* If you want `A` executed before `B`, regardless of the results, simply include `A` as one of the function arguments to `B`, i.e. ```logic.B = function(A,Z,callback) { callback(..do something with Z...)}```
 
-* instinct.js does not handle multiple asynchronous requests for of a single fact (such as an an array that depends on result of multiple request).  Separate counter within a logic function should be used (executing cb when outstanding requests zero) or (better yet) use queue.js to control the sub-logic.
+* instinct.js does not handle multiple asynchronous requests for of a single fact (such as an an array that depends on result of multiple request).  Separate counter within a logic function should be used (executing `callback` when outstanding requests zero) or (better yet) use queue.js to control the sub-logic.
 
-*  This README file is now about 6 times larger than the minified library itself. My instinct tells me I should stop.  
+*  This README file is now about 6 times larger than the minified library itself. My `instinct` tells me I should stop, as most of the facts should be resolved.
