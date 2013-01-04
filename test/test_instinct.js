@@ -58,7 +58,6 @@ vows.describe("instinct").addBatch({
   },
   'instinct by name' : {
     topic : function() {
-      var cb = this.callback;
       I.exec("B",this.callback)
     },
     'returns correct variable' : function(d) {
@@ -68,8 +67,7 @@ vows.describe("instinct").addBatch({
   "default value in logic" : {
     "without a fact" : {
       topic : function() {
-        var cb = this.callback;
-        I.exec("C",cb)
+        I.exec("C",this.callback)
       },
       "logic value is returned as a fact" : function(d) {
         assert.equal(d,10)
@@ -91,8 +89,7 @@ vows.describe("instinct").addBatch({
   },
   "non-existing argument" : {
     topic : function() {
-      var cb = this.callback;
-      I.exec("SOMETHING",cb)
+      I.exec("SOMETHING",this.callback)
     },
     "returns undefined" : function(err,d) {
       assert.deepEqual(err, { ref: 'SOMETHING', err: 'Not defined' })
@@ -175,8 +172,6 @@ vows.describe("instinct").addBatch({
       assert.isFunction(d.reject)
     }
   }
-
-  
 })
 
 .export(module)
