@@ -61,10 +61,12 @@
         this.callback = noop;
         self.process[ref].apply(self,arguments);
       },
-      fact : function(d) { this.callback(null,d); },
+      success : function(d) { this.callback(null,d); },
       error : function(d) { this.callback(d); },
       facts : self.facts
     };
+    context.resolve = context.success;
+    context.reject = context.error;
 
     function queue(err) {
       if (err) {

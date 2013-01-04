@@ -6,10 +6,10 @@ var logic = {
   A:function() { var self=this; setTimeout(function() { self.callback(null,4) },200)},
   B: function(A,callback) {callback(null,A+5)},
   C: 10,
-  D: function(A) { this.fact(A+10)},
+  D: function(A) { this.resolve(A+10)},
   E: function(A) { 
-    this.fact(A+10);
-    this.fact(A+50);
+    this.resolve(A+10);
+    this.success(A+50);
     this.error(A+50);
     this.callback(A+50,A+50)
   },
@@ -160,17 +160,19 @@ vows.describe("instinct").addBatch({
   "reserved function arguments defined in the context object" : {
     topic : function() {
       var that = this;
-      I.exec(function(facts,callback,error,fact,A) {
-        that.callback(null,{fact:fact,facts:facts,callback:callback,error:error})
+      I.exec(function(facts,callback,success,resolve,error,reject,A) {
+        that.callback(null,{facts:facts,callback:callback,success:success,resolve:resolve,error:error,reject:reject})
       })
     },
     "facts is an object" : function(d) {
       assert.isObject(d.facts);
     },
     "callback, fact and error are functions" : function(d) {
-      assert.isFunction(d.fact)
       assert.isFunction(d.callback)
+      assert.isFunction(d.success)
+      assert.isFunction(d.resolve)
       assert.isFunction(d.error)
+      assert.isFunction(d.reject)
     }
   }
 
