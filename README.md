@@ -15,8 +15,11 @@ Creates a new Instinct object based on a particular logic (set of functions and 
 
 The logic object is used as read-only (i.e. any results will only alter fact object, not the logic object), allowing the same logic definitions to be reused for multiple instinct objects (each with a separate fact space).  Instinct object can furthermore be chained by requiring any logic function of one Instinct object to use .exec() function of another.
 
-### `instinct.exec(function(arg1,arg2...) { .... } )`
+### `instinct.exec(function(arg1,arg2...) { .... } ,[error_callback])`
 This schedules an execution of the supplied function.  The argument names of the function will be parsed and matched to facts and logic within the instance object by argument name.  Any arguments that point to neither a fact nor logic will result in an error.  The supplied function is essentially a callback function that is executed when the inputs are known.  
+
+The second argument (optional) is labeled `error_callback` here to clarify typical usage.   The first function does not have to include an instinct callback at all, as it has no dependancies.  With no callback inside the first function, the second callback will therefore only be initiated if there are errors in any of the dependancies of the first function.
+
 
 ### `instinct.exec("name",callback)`
 The exec function can also be called with a string name as first parameter and a callback function as the second parameter.  This is essentially the same as calling instinct exec with a function with only one variable (i.e. name) and is ideal if you need to only work with one fact object.
@@ -24,11 +27,11 @@ The exec function can also be called with a string name as first parameter and a
 All callbacks should return two arguments `this.callback(err,value)` following typical node.js conventions.
 
 ### `instinct.logic = {}`
-Key/value dictionary of logic functions and/or values.   Function in the logic object must only contain arguments names that correspond to either facts or as other logic functions/values.    Each logic function must execute a callback with the resolved value or an error.  The typical way to execute the callback is to call `this.callback(err,value)` ensuring that the `this` object is stored as a local variable if the results are returned from a deeper scope.
+Key/value dictionary of logic functions and/or values.   Functions in the logic object must only contain arguments names that correspond to either facts or as other logic functions/values.    Each logic function must execute a callback at some point with the resolved value or an error. The typical way to execute the callback is to call `this.callback(err,value)` ensuring that the `this` object passed at the top is stored as a local variable if the results are returned from a deeper scope.
 
 ##### `this` context for logic functions
 
-There are however quite a few different ways to use callbacks from a logic function.  The context of `this` object is not the instinct object itself, but an artificial context, specific to the function itself, containing the following references:
+There are multiple ways to initiate callbacks from a logic function, using `this` object.  The context of `this` object is not the instinct object itself, but an artificial context, specific to the function itself, containing the following references:
 
 `this.facts` is a reference to the current facts object of the instinct instance (should not be used really, except to overwrite other facts)
 
@@ -41,11 +44,23 @@ There are however quite a few different ways to use callbacks from a logic funct
 Additionally we have `this.resolve` and `this.reject` for those who like jquery promises way of resolving outstanding requests.
 
 
-##### Bonus level - reserved argument names
-Most asynchronous functions lose the context of the original `this` object requiring the programmer to store `this` as a local `that` or `self` at the top of the function.  In an attempt to eliminate that, all properties of `this` object are injected as function 
-arguments if their names are referenced in the function signature.
+##### Bonus level - this properties as reserved argument names
+Most asynchronous functions lose the context of the original `this` object requiring the programmer to store `this` as a local `that` or `self` at the top of the function.  In an attempt to eliminate this tedious requirement, all properties of `this` object are injected as function 
+arguments if/when their names appear as arguments in the function signature.  This obviously means that those names are reserved and cannot be used as names of facts or custom logic.
 
 Example:
+
+```js
+function(name,db) {
+  var that = this;
+  async.function(db,function(d) {
+    another_async(name,function(e,f,g,h) {
+       that.resolve(g)
+    })
+  })
+}
+```
+can be simplified to the following:
 
 ```js
 function(name,db,resolve) {
@@ -57,7 +72,6 @@ function(name,db,resolve) {
 }
 ```
 
-will retain the resolve callback as scoped all the way down the chain.
 
 ##### Non-functions = default values
 Any logic element that is not a function will be assumed to be a default value for the same fact. This is only recommended for Global Constants, as the logic elements can be asynchronously used by different instinct objects under asymmetric information (facts).
