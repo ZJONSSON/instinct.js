@@ -56,18 +56,15 @@
       if (cb) cb.call(self,err,d);
     };
 
-    var context = {
-      callback : function() {
-        this.callback = noop;
-        self.process[ref].apply(self,arguments);
-      },
-      success : function(d) { this.callback(null,d); },
-      error : function(d) { this.callback(d); },
-      facts : self.facts
-    };
-    context.resolve = context.success;
-    context.reject = context.error;
-
+    var context = {};   
+    context.callback = function() {
+      context.callback = noop;
+      self.process[ref].apply(self,arguments)
+    }
+    context.facts = context.all = self.facts;
+    context.success = context.resolve =  function(d) { context.callback(null,d)}
+    context.error = context.reject = function(d) { context.callback(d,null)};
+    
     function queue(err) {
       if (err) {
         req = -1;
@@ -81,8 +78,10 @@
         fn.apply(context,resolvedArgs);
       }
     }
- 
-    Object.keys(args).forEach(function(key) {
+
+    var refs = (args["all"]>-1) ? Object.keys(self.logic) : Object.keys(args)
+
+    refs.forEach(function(key) {
       if (self.facts[key] !== undefined || key in context) return;
       req++;
       self.exec(key,queue);
