@@ -26,6 +26,15 @@
     this.logic = logic || {};
     this.facts = facts || {};
     this.process = {};
+    this.children = {}
+  }
+
+  Instinct.prototype.set = function(ref,value) {
+    var self = this;
+    self.facts[ref] = value;
+    if(self.children[ref]) Object.keys(self.children[ref]).forEach(function(key) {
+      if (self.facts[key] !== undefined) self.set(key,undefined)
+    })
   }
 
   Instinct.prototype.exec = function(ref,cb) {
@@ -84,6 +93,7 @@
     refs.forEach(function(key) {
       if (self.facts[key] !== undefined || key in context) return;
       req++;
+      if (typeof ref !== "function") (self.children[key] || (self.children[key]={}))[ref] = true;
       self.exec(key,queue);
     });
 
