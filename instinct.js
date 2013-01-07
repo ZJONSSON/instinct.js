@@ -2,7 +2,7 @@
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
 
-  instinct.version = "0.0.6";
+  instinct.version = "0.0.7";
 
   var reArgs = /function.*?\((.*?)\).*/;
 
