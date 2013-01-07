@@ -68,7 +68,7 @@
     var context = {};   
     context.callback = function() {
       context.callback = noop;
-      self.process[ref].apply(self,arguments)
+      if (self.process[ref]) self.process[ref].apply(self,arguments);
     }
     context.facts = context.all = self.facts;
     context.success = context.resolve =  function(d) { context.callback(null,d)}
