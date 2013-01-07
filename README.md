@@ -35,6 +35,8 @@ There are multiple ways to initiate callbacks from a logic function, using `this
 
 `this.facts` is a reference to the current facts object of the instinct instance (should not be used really, except to overwrite other facts)
 
+`this.all` is same as `this.facts` except it forces a complete exec() of all unresolved definitions in the logic object.  
+
 `this.callback` is the standard callback that requires `(err,value)` as parameters
 
 `this.success` is syntax sugar for `this.callback(null,value)`
@@ -83,8 +85,8 @@ We can for example write this:
 
 ```js
 I.logic.dat = function(cb) {
-	$.ajax("./somefile.txt")
-		.done(cb)
+  $.ajax("./somefile.txt")
+    .done(cb)
 }
 ```
 simply .as this:
@@ -94,8 +96,11 @@ $.ajax("./somefile.txt")
   .done(I.add("dat"))
 ```
 
-### `instinct.fact = {}`
-Key value dictionary of facts.  Facts can be user supplied, determined by logic functions or both.   Any fact that exists will prevent execution of logic by same name.  
+### `instinct.set(name,value)`
+Sets a particular fact (by name) to a particular value.   This will override any logic for the same name.  Additionally, any other facts that depend on this value  (if any) will be set to `undefined` to ensure they will be re-evaluated next time (if ever) they are requested through `instinct.exec`. 
+
+### `instinct.facts = {}`
+Key value dictionary of facts.  Facts can be user supplied, determined by logic functions or both.   Any fact that exists will prevent execution of logic by same name.   
 
 ### `instinct.process = {}`
 Internal object that keeps track of logic functions that are currently running.  Any requests to logic that is executing will simply attach their callback to the process object to prevent multiple executions.

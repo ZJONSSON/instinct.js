@@ -52,7 +52,7 @@
         return self;
       }
       fn = self.logic[ref];
-      if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,self.facts[ref]=fn) : cb({ref:ref,err:'Not defined'});
+      if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,fn) : cb({ref:ref,err:'Not defined'});
     } else fn = ref;
 
     var args = matchArgs(fn),

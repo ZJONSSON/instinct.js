@@ -83,8 +83,8 @@ vows.describe("instinct").addBatch({
       "logic value is returned as a fact" : function(d) {
         assert.equal(d,999)
       },
-      "fact table is updated" : function(d) {
-        assert.equal(S2.facts['default'],999)
+      "fact table is not updated" : function(d) {
+        assert.isUndefined(S2.facts['default'])
       }   
     },
     "with a overriding fact" : {
