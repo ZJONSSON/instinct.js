@@ -2,20 +2,14 @@ instinct=require("../instinct")
 assert = require("assert")
 vows=require("vows")
 
-var logic = {
-  A:function() { var self=this; setTimeout(function() { self.callback(null,4) },200)},
-  B: function(A,callback) {callback(null,A+5)},
-  C: 10,
-  D: function(A) { this.resolve(A+10)},
-  E: function(A) { 
-    this.resolve(A+10);
-    this.success(A+50);
-    this.error(A+50);
-    this.callback(A+50,A+50)
-  },
-  F: function(A) { this.error("Could not process")},
-  G : function(A,F) { this.callback(null,A+10)},
-  H : function(A,callback) { callback(null,A+50)},
+var simple = {
+  A: function(resolve) { setTimeout(function() { resolve(42)},200)},
+  B: function(A,resolve) { setTimeout(function() { resolve("Answer is "+A)})},
+  irrelevant : function(resolve) { setTimeout(function() { resolve("irrelevant")})},
+  default : 999
+}
+
+var complex = {
   M1 : function(callback) {  setTimeout(function() { callback(null,10)},100)},
   M2 : function(callback) {  setTimeout(function() { callback(null,20)},300)},
   M3 : function(M1,M2,callback) {  setTimeout(function() { callback(null,M1+M2)},50)},
@@ -23,63 +17,80 @@ var logic = {
   MTOP : function(M3,M4) { this.callback(null,M3+M4)}
 }
 
-var I = instinct(logic);
-
+var S1 = instinct(simple),
+    S2 = instinct(simple),
+    C2 = instinct(complex),
+    E1;
+ 
 vows.describe("instinct").addBatch({
-  'instinct.exec with a function' : {
+  "instinct by function" : {
     topic : function() {
-      var cb = this.callback;
-      I.time = new Date();
-      I.exec(function(B) {
-        cb(null,B)
-      })
+      var self = this;
+      instinct(simple).exec(function(A) { self.callback(null,A)})
+    },
+    "returns correct value" : function(d) {
+      assert.equal(d,42)
+    },
+  },
+  "instinct by name" : {
+    topic : function() {
+      instinct(simple).exec("A",this.callback)
+    },
+    "returns correct value" : function(d) {
+      assert.equal(d,42)
+    }
+  },
+  'instinct.facts' : {
+    topic : function() {
+      var self = this;
+      S1.time = new Date();
+      S1.exec(function(A) { self.callback(null,A) })
     },
     "returns correct variable" : function(d) {
-      assert.equal(d,9)
+      assert.equal(d,42)
     },
     "waits for execution" : function(d) {
-      var wait = (new Date()) -I.time
+      var wait = (new Date()) - S1.time
       assert.equal(wait >= 200,true,"wait was "+wait)
     },
-    "Memoization as facts" : {
+    "fact table reflects the value" : function(d) {
+      assert(S1.facts.A,42)
+    },
+    "only required facts are resolved " : function(d) {
+      assert.isUndefined(S1.facts.C)
+    },
+    "memoization" : {
       topic : function() {
         var that = this;
-        
-        I.time = new Date()
-        I.exec(function(B) {
-          that.callback(null,B)
+        S1.time = new Date()
+        S1.exec(function(A) {
+          that.callback(null,A)
         })
       },
       "The time to fetch again is zero" : function(d) {
-        var wait = (new Date()) -I.time
+        var wait = (new Date()) -S1.time
         assert.equal(wait<50,true,"wait was "+wait)
+        assert.equal(d,42)
       }
     }
   },
-  'instinct by name' : {
-    topic : function() {
-      I.exec("B",this.callback)
-    },
-    'returns correct variable' : function(d) {
-      assert.equal(d,9)
-    }
-  },
+
   "default value in logic" : {
     "without a fact" : {
       topic : function() {
-        I.exec("C",this.callback)
+        S2.exec("default",this.callback)
       },
       "logic value is returned as a fact" : function(d) {
-        assert.equal(d,10)
+        assert.equal(d,999)
       },
       "fact table is updated" : function(d) {
-        assert.equal(I.facts['C'],10)
-      }
+        assert.equal(S2.facts['default'],999)
+      }   
     },
     "with a overriding fact" : {
       topic : function() {
-        var I = instinct(logic,{C:20})  
-        I.exec("C",this.callback)
+        instinct(simple,{"default":20})
+          .exec("default",this.callback)
       },
       "returns the fact, not the default value" : function(d) {
         assert.equal(d,20)
@@ -89,52 +100,70 @@ vows.describe("instinct").addBatch({
   },
   "non-existing argument" : {
     topic : function() {
-      I.exec("SOMETHING",this.callback)
+      instinct(simple).exec("SOMETHING",this.callback)
     },
-    "returns undefined" : function(err,d) {
+    "returns an error" : function(err,d) {
       assert.deepEqual(err, { ref: 'SOMETHING', err: 'Not defined' })
       assert.isUndefined(d)
     }
   },
-  "this.fact" : {
-    topic : function() {
-      I.exec("D",this.callback)
-    },
-    "returns same value as using callback" : function(d) {
-      assert.equal(d,14)
-    }
-  },
+
   "multiple callbacks" : {
     topic : function() {
-      I.exec("E",this.callback)
+      instinct({
+        A : function(resolve,callback,error) {
+          callback(null,42)
+          callback(null,19)
+          
+        }
+      }).exec("A",this.callback)
+      
     },
     "only first callback is used, rest goes to noop()" : function(d) {
-      assert.equal(d,14)
+      assert.equal(d,42)
     }
   },
   "errors" : {
     topic : function() {
-      I.exec("G",this.callback)
+      E1 = instinct({
+        ERR : function(error) { error("Could not process")},
+        DEP : function(ERR,callback) { callback(42)}
+      })
+      E1.exec("DEP",this.callback)
     },
     "show up as first argument (err)" : function(err,d) {
-      assert.deepEqual(err,{ ref: 'F', err: 'Could not process' })
+      assert.deepEqual(err,{ ref: 'ERR', err: 'Could not process' })
     },
     "facts of the error ref and all dependents are undefined" : function(err,d) {
-      assert.isUndefined(I.facts.F)
-      assert.isUndefined(I.facts.G)
+      assert.isUndefined(E1.facts.F)
+      assert.isUndefined(E1.facts.G)
     }
   },
-  "argument named 'callback' in logic function" : {
-    topic: function() {
-      I.exec("H",this.callback)
-    },
-    "is the same as using this.callback" : function(d) {
-      assert.equal(d,54)  
-    }
-  },
-  "complex tree of dependancies" : {
+  
+ 
+  "reserved function arguments defined in the context object" : {
     topic : function() {
-      I.exec("MTOP",this.callback)
+      var that = this;
+      instinct(simple).exec(function(facts,callback,success,resolve,error,reject,A) {
+        that.callback(null,{facts:facts,callback:callback,success:success,resolve:resolve,error:error,reject:reject})
+      })
+    },
+    "facts is an object" : function(d) {
+      assert.isObject(d.facts);
+    },
+    "callback, resolve/success and reject/error are functions" : function(d) {
+      assert.isFunction(d.callback)
+      assert.isFunction(d.success)
+      assert.isFunction(d.resolve)
+      assert.isFunction(d.error)
+      assert.isFunction(d.reject)
+    }
+  },
+
+   "complex tree " : {
+    topic : function() {
+      C1 = instinct(complex)
+        .exec("MTOP",this.callback)
     },
     "is resolved to the top value" : function(d) {
       assert.equal(d,100)
@@ -142,34 +171,58 @@ vows.describe("instinct").addBatch({
     "" : {
       topic : function() {
         var self=this;
-        I.exec(function(facts) {
+        C1.exec(function(facts) {
           self.callback(null,facts)
         })
       },
-      "and leaves the trail in the fact table" : function(d) {
+      "fact table is correct" : function(d) {
         assert.isNumber(d.M1)
         assert.isNumber(d.M2)
         assert.isNumber(d.M3)
         assert.isNumber(d.M4)
+        assert.isNumber(d.MTOP)
+      }
+      , "exec.set()" : {
+        topic : function() {
+          C1.set("M1",20)
+          return true
+        },
+        "changes the respective value" : function(d) {
+          assert.equal(C1.facts.M1,20)
+        },
+        "and sets children of that reference to undefined" : function(d) {         
+          assert.isUndefined(C1.facts.M3)
+          assert.isUndefined(C1.facts.MTOP)
+        },
+        "without touching the other facts" : function(d) {
+          assert.isNumber(C1.facts.M2)
+          assert.isNumber(C1.facts.M4)
+        },
+        "... subsequent exec" : {
+          topic : function() {
+            C1.exec("MTOP",this.callback)
+          },
+          "returns an updated value based on the new fact" : function(d) {
+            assert.equal(d,110)
+          }
+        }
       }
     }
   },
-  "reserved function arguments defined in the context object" : {
+
+  "keyword all" : {
     topic : function() {
-      var that = this;
-      I.exec(function(facts,callback,success,resolve,error,reject,A) {
-        that.callback(null,{facts:facts,callback:callback,success:success,resolve:resolve,error:error,reject:reject})
-      })
+      var that = this
+      instinct(complex)
+      .exec(function(all) { that.callback(null,all)})
     },
-    "facts is an object" : function(d) {
-      assert.isObject(d.facts);
-    },
-    "callback, fact and error are functions" : function(d) {
-      assert.isFunction(d.callback)
-      assert.isFunction(d.success)
-      assert.isFunction(d.resolve)
-      assert.isFunction(d.error)
-      assert.isFunction(d.reject)
+    "returns all facts as resolved"  : function(d) {
+      assert.isNumber(d.M1)
+      assert.isNumber(d.M2)
+      assert.isNumber(d.M3)
+      assert.isNumber(d.M4)
+      assert.isNumber(d.MTOP)
+      assert.equal(d.MTOP,100)
     }
   }
 })
