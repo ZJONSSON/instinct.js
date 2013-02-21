@@ -9,4 +9,4 @@ all: \
 
 %.min.js: %.js Makefile
 	@rm -f $@
-	$(JS_UGLIFY) $< -c -m -o $@
+	$(JS_UGLIFY) $< -c --comments -m -o $@

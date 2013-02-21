@@ -1,4 +1,10 @@
 /*global module,self*/
+
+/**
+  * instinct.js (c) 2009-2013 Ziggy.jonsson.nyc@gmail.com
+  * @license MIT
+  */
+
 (function() {
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
