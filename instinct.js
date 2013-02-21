@@ -1,3 +1,4 @@
+/*global module,self*/
 (function() {
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
@@ -26,16 +27,16 @@
     this.logic = logic || {};
     this.facts = facts || {};
     this.process = {};
-    this.children = {}
+    this.children = {};
   }
 
   Instinct.prototype.set = function(ref,value) {
     var self = this;
     self.facts[ref] = value;
     if(self.children[ref]) Object.keys(self.children[ref]).forEach(function(key) {
-      if (self.facts[key] !== undefined) self.set(key,undefined)
-    })
-  }
+      if (self.facts[key] !== undefined) self.set(key,undefined);
+    });
+  };
 
   Instinct.prototype.exec = function(ref,cb) {
     var self = this,
@@ -69,10 +70,10 @@
     context.callback = function() {
       context.callback = noop;
       if (self.process[ref]) self.process[ref].apply(self,arguments);
-    }
+    };
     context.facts = context.all = self.facts;
-    context.success = context.resolve =  function(d) { context.callback(null,d)}
-    context.error = context.reject = function(d) { context.callback(d,null)};
+    context.success = context.resolve =  function(d) { context.callback(null,d); };
+    context.error = context.reject = function(d) { context.callback(d,null); };
     
     function queue(err) {
       if (err) {
@@ -88,7 +89,7 @@
       }
     }
 
-    var refs = (args["all"]>-1) ? Object.keys(self.logic) : Object.keys(args)
+    var refs = (args.all>-1) ? Object.keys(self.logic) : Object.keys(args);
 
     refs.forEach(function(key) {
       if (self.facts[key] !== undefined || key in context) return;
@@ -99,7 +100,7 @@
 
     queue();
 
-    return self
+    return self;
   };
 
   Instinct.prototype.as = function(key) {
