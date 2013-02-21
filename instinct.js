@@ -103,13 +103,14 @@
     return self;
   };
 
-  Instinct.prototype.as = function(key) {
-    this.process[key] = noop;
+  Instinct.prototype.as = function(ref) {
+    var self = this;
+    self.process[ref] = noop;
     return function(err,d) {
       if (!err) self.facts[ref] = d;
       if (err && !err.ref) err = {ref:ref,err:err};
-      process[key](err,d);
-      delete process[key];
+      self.process[ref](err,d);
+      delete self.process[ref];
     };
   };
 

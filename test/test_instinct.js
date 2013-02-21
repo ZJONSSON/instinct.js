@@ -1,5 +1,4 @@
 /*jshint node:true */
-
 var instinct=require("../instinct"),
     assert = require("assert"),
     vows=require("vows"),
@@ -260,6 +259,26 @@ vows.describe("instinct").addBatch({
       assert.isNumber(d.M4);
       assert.isNumber(d.MTOP);
       assert.equal(d.MTOP,100);
+    }
+  },
+
+  "as()" : {
+    topic : function() {
+      var i = instinct(),
+          that = this;
+
+      function test(cb) {
+        setTimeout(cb(null,10),1000);
+      }
+    
+      test(i.as("a"));
+
+      i.exec(function(a) {
+        that.callback(null,a);
+      });
+    },
+    "is handled by the instinct object" : function(d) {
+      assert.equal(d,10);
     }
   }
 })
