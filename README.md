@@ -93,7 +93,7 @@ simply .as this:
 
 ```js
 $.ajax("./somefile.txt")
-  .done(I.add("dat"))
+  .done(I.as("dat"))
 ```
 
 ### `instinct.set(name,value)`
