@@ -1,6 +1,6 @@
 {
   "name": "instinct",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightweight dependency solver for asynchronous JavaScript.",
   "keywords": [
     "asynchronous",
@@ -14,7 +14,7 @@
   "main": "instinct.js",
   "devDependencies": {
     "uglify-js2": "~2.1.11",
-     "vows": "0.6.x"
+     "vows": "0.7.x"
   },
   "license": "MIT",
   "scripts": {

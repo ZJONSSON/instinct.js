@@ -1,4 +1,6 @@
-JS_UGLIFY = ./node_modules/uglify-js2/bin/uglifyjs2
+NODEPATH ?= "./node_modules"
+JS_UGLIFY = $(NODEPATH)/uglify-js2/bin/uglifyjs2
+JS_TESTER = $(NODEPATH)/vows/bin/vows
 
 JS_FILES = \
 	instinct.js
@@ -10,3 +12,6 @@ all: \
 %.min.js: %.js Makefile
 	@rm -f $@
 	$(JS_UGLIFY) $< -c --comments -m -o $@
+
+test: all
+	@$(JS_TESTER)
