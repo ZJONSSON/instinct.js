@@ -280,6 +280,29 @@ vows.describe("instinct").addBatch({
     "is handled by the instinct object" : function(d) {
       assert.equal(d,10);
     }
+  },
+  "local" : {
+    topic : function() {
+      var that = this;
+      var logic = {
+        "A" : function(B,resolve) {
+          resolve(B+10)
+        },
+        "B" : function(C,resolve) {
+          resolve(C+10)
+        },
+        "C" : function(local,resolve) {
+          resolve(local.Q)
+        }
+      }
+      instinct(logic)
+        .exec(function(A) {
+          that.callback(null,A)
+        },null,{Q:10})
+  },
+  "takes in account the session variable" : function(d) {
+    assert.equal(d,30)
   }
+}
 })
 .export(module);

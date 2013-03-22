@@ -44,7 +44,7 @@
     });
   };
 
-  Instinct.prototype.exec = function(ref,cb) {
+  Instinct.prototype.exec = function(ref,cb,local) {
     var self = this,
         fn;
 
@@ -80,6 +80,7 @@
     context.facts = context.all = self.facts;
     context.success = context.resolve =  function(d) { context.callback(null,d); };
     context.error = context.reject = function(d) { context.callback(d,null); };
+    context.local = local || {};
     
     function queue(err) {
       if (err) {
@@ -101,7 +102,7 @@
       if (self.facts[key] !== undefined || key in context) return;
       req++;
       if (typeof ref !== "function") (self.children[key] || (self.children[key]={}))[ref] = true;
-      self.exec(key,queue);
+      self.exec(key,queue,local);
     });
 
     queue();
