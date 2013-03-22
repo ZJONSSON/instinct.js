@@ -5,9 +5,10 @@ var instinct=require("../instinct"),
     C1;
 
 var simple = {
-  A: function(resolve) { 
-    setTimeout(function() { 
-      resolve(42);},200);
+  A: function(resolve) {
+    setTimeout(function() {
+      resolve(42);
+    },200);
   },
   B: function(A,resolve) {
     setTimeout(function() {
@@ -19,7 +20,7 @@ var simple = {
       resolve("irrelevant");
     });
   },
-  default : 999
+  _default : 999
 };
 
 var complex = {
@@ -50,12 +51,12 @@ var complex = {
 
 var S1 = instinct(simple),
     S2 = instinct(simple);
- 
+
 vows.describe("instinct").addBatch({
   "instinct by function" : {
     topic : function() {
       var self = this;
-      instinct(simple).exec(function(A) { 
+      instinct(simple).exec(function(A) {
         self.callback(null,A);
       });
     },
@@ -108,24 +109,24 @@ vows.describe("instinct").addBatch({
     }
   },
 
-  "default value in logic" : {
+  "_default value in logic" : {
     "without a fact" : {
       topic : function() {
-        S2.exec("default",this.callback);
+        S2.exec("_default",this.callback);
       },
       "logic value is returned as a fact" : function(d) {
         assert.equal(d,999);
       },
       "fact table is not updated" : function() {
-        assert.isUndefined(S2.facts['default']);
-      }   
+        assert.isUndefined(S2.facts['_default']);
+      }
     },
     "with a overriding fact" : {
       topic : function() {
-        instinct(simple,{"default":20})
-          .exec("default",this.callback);
+        instinct(simple,{"_default":20})
+          .exec("_default",this.callback);
       },
-      "returns the fact, not the default value" : function(d) {
+      "returns the fact, not the _default value" : function(d) {
         assert.equal(d,20);
       }
     }
@@ -148,7 +149,6 @@ vows.describe("instinct").addBatch({
           callback(null,19);
         }
       }).exec("A",this.callback);
-      
     },
     "only first callback is used, rest goes to noop()" : function(d) {
       assert.equal(d,42);
@@ -174,7 +174,6 @@ vows.describe("instinct").addBatch({
       assert.isUndefined(E1.facts.G);
     }
   },
- 
   "reserved function arguments defined in the context object" : {
     topic : function() {
       var that = this;
@@ -194,7 +193,7 @@ vows.describe("instinct").addBatch({
     }
   },
 
-   "complex tree " : {
+  "complex tree " : {
     topic : function() {
       C1 = instinct(complex)
         .exec("MTOP",this.callback);
@@ -224,7 +223,7 @@ vows.describe("instinct").addBatch({
         "changes the respective value" : function(d) {
           assert.equal(C1.facts.M1,20);
         },
-        "and sets children of that reference to undefined" : function(d) {         
+        "and sets children of that reference to undefined" : function(d) {
           assert.isUndefined(C1.facts.M3);
           assert.isUndefined(C1.facts.MTOP);
         },
@@ -270,7 +269,6 @@ vows.describe("instinct").addBatch({
       function test(cb) {
         setTimeout(cb(null,10),1000);
       }
-    
       test(i.as("a"));
 
       i.exec(function(a) {
@@ -286,23 +284,23 @@ vows.describe("instinct").addBatch({
       var that = this;
       var logic = {
         "A" : function(B,resolve) {
-          resolve(B+10)
+          resolve(B+10);
         },
         "B" : function(C,resolve) {
-          resolve(C+10)
+          resolve(C+10);
         },
         "C" : function(local,resolve) {
-          resolve(local.Q)
+          resolve(local.Q);
         }
-      }
+      };
       instinct(logic)
         .exec(function(A) {
-          that.callback(null,A)
-        },null,{Q:10})
-  },
-  "takes in account the session variable" : function(d) {
-    assert.equal(d,30)
+          that.callback(null,A);
+        },null,{Q:10});
+    },
+    "takes in account the session variable" : function(d) {
+      assert.equal(d,30);
+    }
   }
-}
 })
 .export(module);

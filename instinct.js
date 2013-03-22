@@ -39,9 +39,10 @@
   Instinct.prototype.set = function(ref,value) {
     var self = this;
     self.facts[ref] = value;
-    if(self.children[ref]) Object.keys(self.children[ref]).forEach(function(key) {
-      if (self.facts[key] !== undefined) self.set(key,undefined);
-    });
+    if(self.children[ref])
+      Object.keys(self.children[ref]).forEach(function(key) {
+        if (self.facts[key] !== undefined) self.set(key,undefined);
+      });
   };
 
   Instinct.prototype.exec = function(ref,cb,local) {
@@ -72,7 +73,7 @@
       if (cb) cb.call(self,err,d);
     };
 
-    var context = {};   
+    var context = {};
     context.callback = function() {
       context.callback = noop;
       if (self.process[ref]) self.process[ref].apply(self,arguments);
@@ -81,7 +82,7 @@
     context.success = context.resolve =  function(d) { context.callback(null,d); };
     context.error = context.reject = function(d) { context.callback(d,null); };
     context.local = local || {};
-    
+
     function queue(err) {
       if (err) {
         req = -1;
