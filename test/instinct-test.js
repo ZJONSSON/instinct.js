@@ -15,6 +15,9 @@ var simple = {
       resolve("Answer is "+A);
     });
   },
+  C : function(_default,resolve) {
+    resolve(_default);
+  },
   irrelevant : function(resolve) {
     setTimeout(function() {
       resolve("irrelevant");
@@ -117,8 +120,11 @@ vows.describe("instinct").addBatch({
       "logic value is returned as a fact" : function(d) {
         assert.equal(d,999);
       },
-      "fact table is not updated" : function() {
-        assert.isUndefined(S2.facts['_default']);
+      "function depending on logic value" : function() {
+        S2.exec("C",function(err,d) { assert.equal(d,999); });
+      },
+      "fact table is updated" : function() {
+        assert.equal(S2.facts['_default'],999);
       }
     },
     "with a overriding fact" : {

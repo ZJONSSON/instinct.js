@@ -9,7 +9,7 @@
   if (typeof module === "undefined") self.instinct = instinct;
   else module.exports = instinct;
 
-  instinct.version = "1.0.0";
+  instinct.version = "1.0.2";
 
   var reArgs = /function.*?\((.*?)\).*/;
 
@@ -60,7 +60,7 @@
         return self;
       }
       fn = self.logic[ref];
-      if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,fn) : cb({ref:ref,err:'Not defined'});
+      if (typeof fn !== 'function') return (fn !== undefined) ? cb(null,self.facts[ref] = fn) : cb({ref:ref,err:'Not defined'});
     } else fn = ref;
 
     var args = matchArgs(fn),
